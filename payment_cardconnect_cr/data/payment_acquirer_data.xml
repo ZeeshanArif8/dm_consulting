@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="payment_acquirer_cconnect" model="payment.acquirer">
+            <field name="name">CardConnect</field>
+            <field name="provider">cardconnect</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="image_128" type="base64" file="payment_cardconnect_cr/static/description/icon.png"/>
+            <field name="view_template_id" ref="payment_cardconnect_cr.cardconnect_form"/>
+            <field name="registration_view_template_id" ref="payment_cardconnect_cr.cardconnect_checkout_s2s_form"/>
+            <field name="cconnect_merchant_account">dummy</field>
+            <field name="cconnect_url">boltgw.cardconnect.com:6443</field>
+            <field name="cconnect_user">dummy</field>
+            <field name="cconnect_pwd">dummy</field>
+        </record>
+    </data>
+</odoo>
