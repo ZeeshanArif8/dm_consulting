@@ -10,6 +10,7 @@ odoo.define('payment_cardconnect_cr.payment_cardconnect_cr', function(require) {
 
     $(document).ready(function() {
         var $modal;
+        var temp = 0;
         $('#o_payment_form_pay').on('click', function(ev) {
             // we retrieve the payment form
             var parent_form = ev.target.form;
@@ -29,7 +30,7 @@ odoo.define('payment_cardconnect_cr.payment_cardconnect_cr', function(require) {
                 return;
             }
 
-            var temp = 0;
+
             var loader = "<div class='cardconnect_payment_loder' style='display:none;'></div>";
             $('.o_payment_form').after(loader);
 
@@ -39,9 +40,25 @@ odoo.define('payment_cardconnect_cr.payment_cardconnect_cr', function(require) {
 
                 $('.cardconnect_payment_loder').show();
                 if (!$modal) {
-                    ajax.jsonRpc("/cardconnect/modal", 'call', {}).then(function(cardconnect_modal) {
+                    var after_payment = false;
+                    var order_amount = false
+                    if($('body').find('.oe_website_sale').length == 0){
+                        after_payment = true;
+                        if($('b[data-id="total_amount"] .oe_currency_value').length > 0){
+                            order_amount = $('b[data-id="total_amount"] .oe_currency_value').first().text()
+                        }
+                    }
+
+                    ajax.jsonRpc("/cardconnect/modal", 'call', {'after_payment' : after_payment,'order_amount' : order_amount}).then(function(cardconnect_modal) {
                         $modal = $(cardconnect_modal);
-                        
+                        $modal.on('hide.bs.modal', function (e) {
+                            $(this).remove();
+                            temp = 0
+                            $modal = false;
+                            $('#o_payment_form_pay').show();
+                        })
+
+
                         $('#o_payment_form_pay').hide();
                         $('#o_payment_form_pay').after($modal);
 
