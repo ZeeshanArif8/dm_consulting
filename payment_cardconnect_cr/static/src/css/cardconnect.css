@@ -44,3 +44,7 @@
 .display-inline{
   display: flex !important;
 }
+
+.cardconnect-modal-content{
+    min-height : 100% !important;
+}

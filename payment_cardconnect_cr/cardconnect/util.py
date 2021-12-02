@@ -24,7 +24,7 @@ except ImportError:
     from io import StringIO
 
 try:
-    from urllib.parse import parse_qsl
+    from urlparse import parse_qsl
 except ImportError:
     from cgi import parse_qsl
 

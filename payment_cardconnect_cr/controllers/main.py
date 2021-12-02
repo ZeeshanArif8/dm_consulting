@@ -210,14 +210,14 @@ class CarcconnectController(http.Controller):
         return werkzeug.utils.redirect('/payment/process')
 
     @http.route(['/cardconnect/modal'], type='json', auth="public", methods=['POST'], website=True)
-    def cardconnect_modal(self):
+    def cardconnect_modal(self,**kw):
         order = request.website.sale_get_order()
         acquirere_id = request.website.get_cardconnect_payment_acquirere_id()
         acquirere = request.env['payment.acquirer'].sudo().browse(int(acquirere_id))
         vals = {
             'return_url': '/shop/payment/validate',
             'reference': '/',
-            'amount': order.amount_total,
+            'amount': kw.get('order_amount') if kw.get('order_amount') and kw.get('after_payment') else order.amount_total,
             'currency': order.currency_id,
             'cardconnect-acquirer-id': acquirere_id,
         }
