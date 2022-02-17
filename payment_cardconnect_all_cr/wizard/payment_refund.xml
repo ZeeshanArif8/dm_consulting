@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+		<record id="view_sale_payment_refund_form" model="ir.ui.view">
+			<field name="name">sale.payment.refund.form</field>
+			<field name="model">sale.payment.refund</field>
+			<field name="arch" type="xml">
+				<form string="Payment Refund">
+					<group>
+						<group>
+							<div attrs="{'invisible': [('type', '=', 'refund')]}">
+								<b>For this transaction you can do VOID</b>
+							</div>
+							<div attrs="{'invisible': [('type', '=', 'void')]}">
+								<b>For this transaction you can do REFUND</b>
+							</div>
+						</group>
+					</group>
+					<group>
+						<group>
+							<field name="payment_transaction_id" invisible="1"/>
+							<field name="type" class="o_light_label" widget="radio" invisible="1"/>
+							<field name="amount_type" widget="radio"/>
+							<field name="amount" force_save="1" attrs="{'readonly':[('amount_type','=','full')]}" required="1"/>
+						</group>
+					</group>
+					<footer>
+						<button name="refund" type="object" string="Refund" class="btn btn-primary" />
+						<button string="Close" class="oe_highlight" special="cancel" />
+					</footer>
+				</form>
+			</field>
+		</record>
+
+<!--		<record id="action_sale_payment_refund" model="ir.actions.act_window">-->
+<!--			<field name="name">Payment Refund</field>-->
+<!--            <field name="res_model">sale.payment.refund</field>-->
+<!--            <field name="view_mode">form</field>-->
+<!--            <field name="target">new</field>-->
+<!--		</record>-->
+	</data>
+</odoo>

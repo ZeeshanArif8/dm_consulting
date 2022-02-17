@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <record id="cardconnect_view_order_form" model="ir.ui.view">
+        <field name="name">cardconnect.sales.orde.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <button name="action_cancel" position="before">
+                <field name="is_sale_payment_refund" invisible="1"/>
+                <button name="create_sale_payment_refund" string="Refund / Void Payment" type="object"
+                        attrs="{'invisible':[('is_sale_payment_refund','=',False)]}"/>
+            </button>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button attrs="{'invisible': [('payment_token_count', '=', 0)]}" name="partner_payment_token" type="object" class="oe_stat_button" icon="fa-credit-card">
+                    <div class="o_form_field o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="payment_token_count" widget="statinfo" nolabel="1"/>
+                        </span>
+                        <span class="o_stat_text">Cards</span>
+                    </div>
+                </button>
+                <button name="create_new_payment_token" type="object" class="oe_stat_button" icon="fa-credit-card">
+                    Add a Card
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="cardconnect_view_move_form" model="ir.ui.view">
+        <field name="name">cardconnect.account.move.form</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button attrs="{'invisible': [('payment_token_count', '=', 0)]}" name="partner_payment_token" type="object" class="oe_stat_button" icon="fa-credit-card">
+                    <div class="o_form_field o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="payment_token_count" widget="statinfo" nolabel="1"/>
+                        </span>
+                        <span class="o_stat_text">Cards</span>
+                    </div>
+                </button>
+                <button name="create_new_payment_token" type="object" class="oe_stat_button" icon="fa-credit-card">
+                    Add a Card
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="cardconnect_view_partner_form" model="ir.ui.view">
+        <field name="name">cardconnect.res.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="create_new_payment_token" type="object" class="oe_stat_button" icon="fa-credit-card">
+                    Add a Card
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

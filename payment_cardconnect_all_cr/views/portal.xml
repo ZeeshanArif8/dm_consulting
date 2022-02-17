@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+
+    <template id="portal_my_payment_card" name="Show Payment Card Details" inherit_id="portal.portal_my_home" priority="87">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">My Payment Tokens</t>
+                <t t-set="url" t-value="'/my/payment/card'"/>
+                <t t-set="placeholder_count" t-value="'mypaymentcard_count'"/>
+            </t>
+        </xpath>
+    </template>
+    <template id="portal_my_home_menu_payment_card" name="Portal layout : payment card" inherit_id="portal.portal_breadcrumbs" priority="20">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'mypayment'" t-attf-class="breadcrumb-item #{'active ' if not mypayment else ''}">
+                My Cards
+            </li>
+        </xpath>
+    </template>
+
+    <template id="portal_my_payment_tokens_add" name="My Payment Card">
+        <div id="modal_portal_my_payment_tokens_add" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header align-items-center">
+                        <h4 class="modal-title">Add New</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>×</span></button>
+                    </div>
+                    <div class="modal-body bg-light border-bottom">
+                        <form action="/form/payment/tokens/add">
+                            <div class="row">
+<!--                                <div class="form-group col-xl-12 d-none">-->
+<!--                                    <label class="col-form-label" for="merchid">merchid</label>-->
+<!--                                    <input type="text" name="merchid" class="form-control" t-att-value="acquirer.cconnect_merchant_account"/>-->
+<!--                                </div>-->
+                                <div class="form-group col-xl-12">
+                                    <label class="col-form-label" for="name">Cardholder name</label>
+                                    <input type="text" name="name" class="form-control" placeholder="Cardholder name" required="required"/>
+                                </div>
+                                <div class="form-group col-xl-12">
+                                    <label for="account">CardNumber</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="inputGroupPrepend">
+                                                <i class="fa fa-credit-card"/>
+                                            </span>
+                                        </div>
+                                        <input type="text" class="form-control" name="account"
+                                               id="validationCustomUsername" placeholder="Card Number"
+                                               aria-describedby="inputGroupPrepend" required="required"/>
+                                        <div class="invalid-feedback">
+                                            Please add Valid CardNumber.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group col-xl-12">
+                                    <label for="expiry">
+                                        <span class="hidden-xs">EXPIRATION</span>
+                                        <span class="visible-xs-inline">EXP</span>
+                                        DATE
+                                    </label>
+                                    <input type="tel" class="form-control" name="expiry" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" required="required"/>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="form-group col-xl-12 text-center">
+                                    <button type="button" class="btn btn-secondary render_payment_page_cancel" data-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary render_payment_page_continue">Submit</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="portal_my_payment_tokens" name="My Payment Card">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">My Payment Tokens</t>
+            </t>
+            <t t-if="not payment_tokens">
+                <p>There are currently no payment token for your account.</p>
+            </t>
+            <t t-if="payment_tokens" t-call="portal.portal_table">
+                <thead class="payment_tokens_thead">
+                    <tr class="active">
+                        <th class="text-left">Name</th>
+                        <th class="text-left">Acquirer Account</th>
+                        <th class="text-left">Acquirer Ref.</th>
+                        <th class="text-right"><a class="add_new_paymentcard btn btn-primary text-right">Add New</a></th>
+                    </tr>
+                </thead>
+                <div id="delete_paymentcard_model_id" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content border-0">
+                            <main class="modal-body mt-md-5">
+                                <div class="text-center text-muted">
+                                    <span>Are you sure you want to delete this?</span>
+                                </div>
+                            </main>
+                            <footer class="modal-footer">
+                                <a class="btn btn-primary delete-confirm" href="">Confirm</a>
+                                <button class="btn btn-primary" data-dismiss="modal" type="button">Close</button>
+                            </footer>
+                        </div>
+                    </div>
+                </div>
+                <t t-foreach="payment_tokens" t-as="payment_token">
+                    <tr>
+                        <td class="text-left">
+                            <span t-field="payment_token.name"/>
+                        </td>
+                        <td class="text-left">
+                            <span t-field="payment_token.acquirer_id.name"/>
+                        </td>
+                        <td class="text-left">
+                            <span t-field="payment_token.acquirer_ref"/>
+                        </td>
+                        <td class="text-right">
+                            <input type="hidden" t-att-value="slug(payment_token)"/>
+                            <button id="delete_button_id" class="delete_button_id btn btn-primary">Delete</button>
+<!--                            <a t-att-href="'/my/payment/tokens/%s' % (slug(payment_token))" class="btn btn-primary">Edit</a>-->
+                        </td>
+                    </tr>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="assets_frontend_portal_all_cr" inherit_id="website.assets_frontend">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/payment_cardconnect_all_cr/static/src/js/portal.js"/>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+		<record id="view_sale_payment_token_form" model="ir.ui.view">
+			<field name="name">sale.payment.token.form</field>
+			<field name="model">sale.payment.token</field>
+			<field name="arch" type="xml">
+				<form string="Payment Token">
+					<group>
+						<field name="partner_id" invisible="1"/>
+						<field name="name" placeholder="Cardholder name" required="1"/>
+						<field name="account" placeholder="Card Number" required="1"/>
+						<field name="expiry" placeholder="MM / YY" required="1"/>
+					</group>
+					<footer>
+						<button name="create_new_payment_token" type="object" string="Create" class="btn btn-primary" />
+						<button string="Close" class="oe_highlight" special="cancel"/>
+					</footer>
+				</form>
+			</field>
+		</record>
+	</data>
+</odoo>
