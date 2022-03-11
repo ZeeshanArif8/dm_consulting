@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     'StringIO',
-    'parse_qsl',
+    # 'parse_qsl',
     'json',
     # 'jsonpickle',
     'utf8',
@@ -23,11 +23,11 @@ try:
 except ImportError:
     from io import StringIO
 
-try:
-    from urlparse import parse_qsl
-except ImportError:
-    # from cgi import parse_qsl
-    from urllib.parse import parse_qsl
+# try:
+#     from urlparse import parse_qsl
+# except ImportError:
+#     # from cgi import parse_qsl
+#     from urllib.parse import parse_qsl
 
 try:
     import json
