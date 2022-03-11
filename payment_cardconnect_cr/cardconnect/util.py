@@ -26,7 +26,8 @@ except ImportError:
 try:
     from urlparse import parse_qsl
 except ImportError:
-    from cgi import parse_qsl
+    # from cgi import parse_qsl
+    from urllib.parse import parse_qsl
 
 try:
     import json
