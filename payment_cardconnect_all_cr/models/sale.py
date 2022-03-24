@@ -2,7 +2,7 @@
 # Part of Odoo Module Developed by Candidroot Solutions Pvt. Ltd.
 # See LICENSE file for full copyright and licensing details.
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError,ValidationError
 from .. import cardconnect
 
 class AccountMoveLine(models.Model):

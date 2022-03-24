@@ -98,6 +98,7 @@ class TransactionCardconnect(models.Model):
                                             ('void', 'Void'),
                                             ('partial_void', 'Partial Void')],ondelete={'refund': 'set default', 'partial_refund': 'set default', 'void': 'set default', 'partial_void': 'set default'})
     refund_amount = fields.Float('Refund/Void Amount')
+    cc_response = fields.Text("Card Connect Response")
 
     # def _check_amount_and_confirm_order(self):
     #     self.ensure_one()
@@ -127,13 +128,18 @@ class TransactionCardconnect(models.Model):
         cardconnect.password = self.acquirer_id.cconnect_pwd
         cardconnect.base_url = self.acquirer_id.cconnect_url
         cardconnect.debug = True
-        result = cardconnect.Auth.create(
+        auth_result = cardconnect.Auth.create(
             merchid=self.acquirer_id.cconnect_merchant_account,
             profile=self.payment_token_id.acquirer_ref + '/' + self.payment_token_id.acctid,
             amount=self.amount,
             currency=self.currency_id.name,
         )
-        return self._cardconnect_s2s_validate_tree(result)
+        if auth_result and auth_result.get('respcode') == '00' and auth_result.get("retref"):
+            auth_result = cardconnect.Capture.create(
+                merchid=self.acquirer_id.cconnect_merchant_account,
+                retref=auth_result['retref'],
+            )
+        return self._cardconnect_s2s_validate_tree(auth_result)
 
     def _cardconnect_s2s_validate_tree(self, result):
         return self._cardconnect_s2s_validate(result)
@@ -145,6 +151,7 @@ class TransactionCardconnect(models.Model):
                 'cct_txcurrency': self.currency_id.name,
                 'acquirer_reference': result.get('retref'),
                 'date': fields.Datetime.now(),
+                'cc_response': result
             })
             self._set_transaction_done()
             return True

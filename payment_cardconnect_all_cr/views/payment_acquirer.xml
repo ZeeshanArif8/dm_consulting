@@ -31,6 +31,7 @@
                         <group>
                             <field name="cct_txnid"/>
                             <field name="cct_txcurrency"/>
+                            <field name="cc_response"/>
                         </group>
                     </page>
                 </notebook>
