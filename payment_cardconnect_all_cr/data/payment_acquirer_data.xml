@@ -9,10 +9,10 @@
             <field name="image_128" type="base64" file="payment_cardconnect_all_cr/static/description/icon.png"/>
             <field name="view_template_id" ref="payment_cardconnect_all_cr.cardconnect_form"/>
             <field name="registration_view_template_id" ref="payment_cardconnect_all_cr.cardconnect_s2s_form"/>
-            <field name="cconnect_merchant_account">dummy</field>
-            <field name="cconnect_url">boltgw.cardconnect.com:6443</field>
-            <field name="cconnect_user">dummy</field>
-            <field name="cconnect_pwd">dummy</field>
+            <field name="cconnect_merchant_account">496160873888</field>
+            <field name="cconnect_url">fts.cardconnect.com:6443</field>
+            <field name="cconnect_user">testing</field>
+            <field name="cconnect_pwd">testing123</field>
             <field name="save_token">ask</field>
         </record>
         

@@ -143,9 +143,11 @@ class SaleOrder(models.Model):
                 retref=transaction.acquirer_reference,
             )
             context = dict(self._context)
-            if result and result.get('respcode') == '00' and result.get('setlstat') in ['Authorized','Queued for Capture']:
+            # if result and result.get('respcode') == '00' and result.get('setlstat') in ['Authorized','Queued for Capture']:
+            if result and result.get('respcode') == '00' and result.get('voidable') == "Y":
                 context.update({'default_type': 'void'})
-            elif result and result.get('respcode') == '00' and result.get('setlstat') == 'refundable':
+            # elif result and result.get('respcode') == '00' and result.get('setlstat') == 'refundable':
+            elif result and result.get('respcode') == '00' and result.get('refundable') == 'Y':
                 context.update({'default_type': 'refund'})
             else:
                 raise UserError(_("You can not do void or refund for this transaction"))
@@ -169,6 +171,56 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     payment_token_count = fields.Integer('Count Payment Token', compute='_compute_payment_token_count')
+    is_sale_payment_refund = fields.Boolean(compute="_compute_sale_payment_refund", store=True)
+
+    @api.depends('transaction_ids', 'transaction_ids.state')
+    def _compute_sale_payment_refund(self):
+        val = False
+        for inv in self:
+            transaction = inv.transaction_ids.filtered(lambda x: x.state in ['done', 'partial_refund', 'partial_void'] and x.acquirer_id.provider == 'cardconnect')
+            if transaction:
+                val = True
+            inv.is_sale_payment_refund = val
+
+    def create_sale_payment_refund(self):
+        transaction = self.transaction_ids.filtered(lambda x: x.state in ['done', 'partial_refund', 'partial_void'] and x.acquirer_id.provider == 'cardconnect')
+        if transaction:
+            cardconnect.username = transaction.acquirer_id.cconnect_user
+            cardconnect.password = transaction.acquirer_id.cconnect_pwd
+            cardconnect.base_url = transaction.acquirer_id.cconnect_url
+            cardconnect.debug = True
+            result = cardconnect.Inquire.get(
+                merchid=transaction.acquirer_id.cconnect_merchant_account,
+                retref=transaction.acquirer_reference,
+            )
+            context = dict(self._context)
+            # if result and result.get('respcode') == '00' and result.get('setlstat') in ['Authorized', 'Queued for Capture']:
+            if result and result.get('respcode') == '00' and result.get('voidable') == "Y":
+                context.update({'default_type': 'void'})
+            # elif result and result.get('respcode') == '00' and result.get('setlstat') == 'refundable':
+            elif result and result.get('respcode') == '00' and result.get('refundable') == 'Y':
+                context.update({'default_type': 'refund'})
+            else:
+                raise UserError(_("You can not do void or refund for this transaction"))
+            view = self.env.ref('payment_cardconnect_all_cr.view_sale_payment_refund_form')
+            context.update({'default_payment_transaction_id': transaction.id})
+            return {
+                'name': _('Payment Refund'),
+                'type': 'ir.actions.act_window',
+                'view_type': 'form',
+                'view_mode': 'form',
+                'res_model': 'sale.payment.refund',
+                'views': [(view.id, 'form')],
+                'view_id': view.id,
+                'target': 'new',
+                'context': context
+            }
+        else:
+            raise UserError(_("Order/Transaction not done"))
+
+
+
+
 
     def _create_payment_transaction(self, vals):
         # Ensure the currencies are the same.
