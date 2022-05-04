@@ -135,7 +135,7 @@ class TransactionCardconnect(models.Model):
             currency=self.currency_id.name,
         )
         _logger.info("--------auth_result----------%s",auth_result)
-        if auth_result and auth_result.get('respcode') == '00' and auth_result.get("retref"):
+        if auth_result and auth_result.get('respcode') in ('00','000') and auth_result.get("retref"):
             auth_result = cardconnect.Capture.create(
                 merchid=self.acquirer_id.cconnect_merchant_account,
                 retref=auth_result['retref'],
