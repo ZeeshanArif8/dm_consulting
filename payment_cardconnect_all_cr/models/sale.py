@@ -4,6 +4,8 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError,ValidationError
 from .. import cardconnect
+import logging
+_logger = logging.getLogger(__name__)
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
@@ -143,11 +145,12 @@ class SaleOrder(models.Model):
                 retref=transaction.acquirer_reference,
             )
             context = dict(self._context)
+            _logger.info("--------result-----sale-----%s", result)
             # if result and result.get('respcode') == '00' and result.get('setlstat') in ['Authorized','Queued for Capture']:
-            if result and result.get('respcode') == '00' and result.get('voidable') == "Y":
+            if result and result.get('respcode') == ('00','000') and result.get('voidable') == "Y":
                 context.update({'default_type': 'void'})
             # elif result and result.get('respcode') == '00' and result.get('setlstat') == 'refundable':
-            elif result and result.get('respcode') == '00' and result.get('refundable') == 'Y':
+            elif result and result.get('respcode') == ('00','000') and result.get('refundable') == 'Y':
                 context.update({'default_type': 'refund'})
             else:
                 raise UserError(_("You can not do void or refund for this transaction"))
@@ -194,11 +197,12 @@ class AccountMove(models.Model):
                 retref=transaction.acquirer_reference,
             )
             context = dict(self._context)
+            _logger.info("--------result-----sale-----%s", result)
             # if result and result.get('respcode') == '00' and result.get('setlstat') in ['Authorized', 'Queued for Capture']:
-            if result and result.get('respcode') == '00' and result.get('voidable') == "Y":
+            if result and result.get('respcode') == ('00','000') and result.get('voidable') == "Y":
                 context.update({'default_type': 'void'})
             # elif result and result.get('respcode') == '00' and result.get('setlstat') == 'refundable':
-            elif result and result.get('respcode') == '00' and result.get('refundable') == 'Y':
+            elif result and result.get('respcode') == ('00','000') and result.get('refundable') == 'Y':
                 context.update({'default_type': 'refund'})
             else:
                 raise UserError(_("You can not do void or refund for this transaction"))
