@@ -134,11 +134,13 @@ class TransactionCardconnect(models.Model):
             amount=self.amount,
             currency=self.currency_id.name,
         )
+        _logger.info("--------auth_result----------%s",auth_result)
         if auth_result and auth_result.get('respcode') == '00' and auth_result.get("retref"):
             auth_result = cardconnect.Capture.create(
                 merchid=self.acquirer_id.cconnect_merchant_account,
                 retref=auth_result['retref'],
             )
+            _logger.info("--------auth_result----1------%s", auth_result)
         return self._cardconnect_s2s_validate_tree(auth_result)
 
     def _cardconnect_s2s_validate_tree(self, result):
