@@ -4,6 +4,8 @@
 
 import logging
 import pprint
+import hashlib
+import hmac
 from datetime import datetime
 import werkzeug
 from odoo import http
@@ -14,14 +16,102 @@ from .. import cardconnect
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager, get_records_pager
 from odoo.exceptions import UserError
 from odoo.addons.payment.models.payment_acquirer import ValidationError
-from odoo.addons.payment.controllers.portal import PaymentProcessing
-from odoo.addons.payment.controllers.portal import WebsitePayment
+from odoo.tools.float_utils import float_repr
 from odoo.osv import expression
 from unicodedata import normalize
+
 _logger = logging.getLogger(__name__)
 
+from odoo.addons.payment.controllers.portal import WebsitePayment,PaymentProcessing
 
 class WebsitePaymentCC(WebsitePayment):
+    @staticmethod
+    def _get_acquirers_compatible_with_current_user(acquirers):
+        # s2s mode will always generate a token, which we don't want for public users
+        valid_flows = ['form'] if request.env.user._is_public() else ['form', 's2s']
+        return [acq for acq in acquirers if acq.payment_flow in valid_flows] + [acq for acq in acquirers if acq.provider == "cardconnect" and request.env.user._is_public()]
+        # res = super(WebsitePaymentCC, self)._get_acquirers_compatible_with_current_user(acquirers)
+
+    @http.route()
+    def payment_token(self, pm_id, reference, amount, currency_id, partner_id=False, return_url=None, **kwargs):
+        token = request.env['payment.token'].sudo().browse(int(pm_id))
+        order_id = kwargs.get('order_id')
+        invoice_id = kwargs.get('invoice_id')
+        if not token:
+            return request.redirect('/website_payment/pay?error_msg=%s' % _('Cannot setup the payment.'))
+        values = {
+            'acquirer_id': token.acquirer_id.id,
+            'reference': reference,
+            'amount': float(amount),
+            'currency_id': int(currency_id),
+            'partner_id': int(partner_id),
+            'payment_token_id': int(pm_id),
+            'type': 'server2server',
+            'return_url': return_url,
+        }
+        if order_id:
+            values['sale_order_ids'] = [(6, 0, [int(order_id)])]
+
+            acquirer = token.acquirer_id
+            partner = request.env['res.partner'].sudo().browse(int(partner_id))
+            order_id = request.env['sale.order'].sudo().browse(int(order_id))
+            if acquirer and acquirer.provider == 'cardconnect':
+                acquirer_fees = acquirer.cardconnect_compute_fees(float(amount), int(currency_id), partner.country_id.id)
+                if acquirer_fees:
+                    values.update({'amount': acquirer_fees + values.get('amount', 0)})
+                    for order in order_id:
+                        fees_line = order.order_line.filtered(lambda line: line.is_cardconnect_fees_line)
+                        fees_product = request.env.ref('payment_cardconnect_all_cr.product_cardconnect_fees_line')
+                        if fees_line:
+                            fees_line.write({'price_unit': acquirer_fees})
+                        else:
+                            val = {
+                                'name': fees_product.sudo().name,
+                                'product_id': fees_product.sudo().id,
+                                'product_uom_qty': 1,
+                                'price_unit': acquirer_fees,
+                                'is_cardconnect_fees_line': True,
+                            }
+                            order.write({'order_line': [(0, 0, val)]})
+
+        if invoice_id:
+            values['invoice_ids'] = [(6, 0, [int(invoice_id)])]
+
+            acquirer = token.acquirer_id
+            partner = request.env['res.partner'].sudo().browse(int(partner_id))
+            invoice_id = request.env['account.move'].sudo().browse(int(invoice_id))
+            if acquirer and acquirer.provider == 'cardconnect':
+                acquirer_fees = acquirer.cardconnect_compute_fees(float(amount), int(currency_id), partner.country_id.id)
+                if acquirer_fees:
+                    values.update({'amount': acquirer_fees + values.get('amount', 0)})
+                    for invoice in invoice_id:
+                        fees_line = invoice.invoice_line_ids.filtered(lambda line: line.is_cardconnect_fees_line)
+                        fees_product = request.env.ref('payment_cardconnect_all_cr.product_cardconnect_fees_line')
+                        if fees_line:
+                            fees_line.write({'price_unit': acquirer_fees})
+                        else:
+                            val = {
+                                'name': fees_product.sudo().name,
+                                'product_id': fees_product.sudo().id,
+                                'quantity': 1,
+                                'price_unit': acquirer_fees,
+                                'is_cardconnect_fees_line': True,
+                                'account_id': fees_product.sudo().property_account_income_id.id,
+                            }
+                            invoice.write({'invoice_line_ids': [(0, 0, val)]})
+
+        tx = request.env['payment.transaction'].sudo().with_context(lang=None).create(values)
+        PaymentProcessing.add_payment_transaction(tx)
+
+        try:
+            tx.s2s_do_transaction()
+            secret = request.env['ir.config_parameter'].sudo().get_param('database.secret')
+            token_str = '%s%s%s' % (tx.id, tx.reference, float_repr(tx.amount, precision_digits=tx.currency_id.decimal_places))
+            token = hmac.new(secret.encode('utf-8'), token_str.encode('utf-8'), hashlib.sha256).hexdigest()
+            tx.return_url = return_url or '/website_payment/confirm?tx_id=%d&access_token=%s' % (tx.id, token)
+        except Exception as e:
+            _logger.exception(e)
+        return request.redirect('/payment/process')
 
     @http.route()
     def pay(self, reference='', order_id=None, amount=False, currency_id=None, acquirer_id=None, partner_id=False, access_token=None, **kw):
@@ -142,12 +232,11 @@ class WebsitePaymentCC(WebsitePayment):
 
         if values['acquirers']:
             valid_flows = ['form'] if request.env.user._is_public() else ['form', 's2s']
-            custom_acquirers = acquirers.filtered(lambda x: x.payment_flow in valid_flows)
+            custom_acquirers = acquirers.filtered(lambda x: x.provider == "cardconnect" or x.payment_flow in valid_flows)
             cc_partner_id = request.env['res.partner'].sudo()
             if values.get("partner_id"):
                 cc_partner_id = request.env['res.partner'].sudo().browse(values['partner_id'])
             values['acq_extra_fees'] = custom_acquirers.get_acquirer_extra_fees(values['amount'], values['currency'], cc_partner_id.country_id.id)
-
         return request.render('payment.pay', values)
 
 class CarcconnectController(http.Controller):
@@ -268,7 +357,6 @@ class CustomerPortal(CustomerPortal):
         # search the count to display, according to the pager data
         payment_tokens = payment_token_obj.search(domain, limit=self._items_per_page, offset=pager['offset'])
         request.session['my_gogpvehicle_history'] = payment_tokens.ids[:100]
-
         values.update({
             'date': date_begin,
             'payment_tokens': payment_tokens.sudo(),

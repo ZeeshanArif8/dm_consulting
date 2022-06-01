@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-
     <template id="cardconnect_form">
         <input type='hidden' name='reference' t-att-value='reference'/>
         <input type='hidden' name='amount' t-att-value='amount or "0.0"'/>
         <input type='hidden' name='currency' t-att-value='currency.name'/>
+        <input type="hidden" name="order_id" t-att-value="order_id"/>
+        <input type="hidden" name="invoice_id" t-att-value="invoice_id"/>
     </template>
 
     <template id="cardconnect_s2s_form">
         <input type="hidden" name="data_set" data-create-route="/payment/cardconnect/s2s/create_json_3ds"/>
         <input type="hidden" name="acquirer_id" t-att-value="id"/>
+        <input type="hidden" name="order_id" t-att-value="order_id"/>
+        <input type="hidden" name="invoice_id" t-att-value="invoice_id"/>
         <input t-if="return_url" type="hidden" name="return_url" t-att-value="return_url"/>
         <input t-if="partner_id" type="hidden" name="partner_id" t-att-value="partner_id"/>
         <div t-attf-class="row mt8 #{'' if bootstrap_formatting else 'o_card_brand_detail'}">

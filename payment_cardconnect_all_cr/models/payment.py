@@ -8,6 +8,7 @@ from odoo import api, fields, models, _
 from odoo.addons.payment.models.payment_acquirer import ValidationError
 from odoo.tools.float_utils import float_compare
 from .. import cardconnect
+from odoo.http import request
 _logger = logging.getLogger(__name__)
 
 class AcquirerCardconnect(models.Model):
@@ -60,7 +61,7 @@ class AcquirerCardconnect(models.Model):
 
     def cardconnect_s2s_form_process(self, data):
         acquirer_id = self.env['payment.acquirer'].sudo().browse(int(data.get('acquirer_id')))
-        partner = self.env.user.partner_id
+        partner = data.get('partner_id', self.env.user.partner_id.id)
         cardconnect.username = acquirer_id.cconnect_user
         cardconnect.password = acquirer_id.cconnect_pwd
         cardconnect.base_url = acquirer_id.cconnect_url
@@ -77,7 +78,7 @@ class AcquirerCardconnect(models.Model):
                 'acquirer_ref': result.get('profileid'),
                 'acctid': result.get('acctid'),
                 'acquirer_id': acquirer_id.id,
-                'partner_id': partner.id,
+                'partner_id': int(partner),
             })
             a = token.name
             name = a[-4:].rjust(len(a), "X")
@@ -96,7 +97,7 @@ class TransactionCardconnect(models.Model):
     state = fields.Selection(selection_add=[('refund', 'Refund'),
                                             ('partial_refund', 'Partial Refund'),
                                             ('void', 'Void'),
-                                            ('partial_void', 'Partial Void')],ondelete={'refund': 'set default', 'partial_refund': 'set default', 'void': 'set default', 'partial_void': 'set default'})
+                                            ('partial_void', 'Partial Void')], ondelete={'refund': 'set default', 'partial_refund': 'set default', 'void': 'set default', 'partial_void': 'set default'})
     refund_amount = fields.Float('Refund/Void Amount')
     cc_response = fields.Text("Card Connect Response")
 
@@ -134,13 +135,17 @@ class TransactionCardconnect(models.Model):
             amount=self.amount,
             currency=self.currency_id.name,
         )
-        _logger.info("--------auth_result----------%s",auth_result)
+        _logger.info("--------auth_result----------%s", auth_result)
         if auth_result and auth_result.get('respcode') in ('00','000') and auth_result.get("retref"):
             auth_result = cardconnect.Capture.create(
                 merchid=self.acquirer_id.cconnect_merchant_account,
                 retref=auth_result['retref'],
             )
+            if request.env.user._is_public():
+                self.sudo().payment_token_id.unlink()
             _logger.info("--------auth_result----1------%s", auth_result)
+        else:
+            self.sudo().payment_token_id.unlink()
         return self._cardconnect_s2s_validate_tree(auth_result)
 
     def _cardconnect_s2s_validate_tree(self, result):
@@ -162,6 +167,7 @@ class TransactionCardconnect(models.Model):
             _logger.info(error)
             self.write({
                 'acquirer_reference': result.get('retref'),
+                'cc_response': result
             })
             self._set_transaction_error(msg=error)
             return False
@@ -170,6 +176,7 @@ class TransactionCardconnect(models.Model):
             _logger.info(error)
             self.write({
                 'acquirer_reference': result.get('retref'),
+                'cc_response': result
             })
             self._set_transaction_error(msg=error)
             return False

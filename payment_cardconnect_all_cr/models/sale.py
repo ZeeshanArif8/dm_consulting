@@ -2,7 +2,7 @@
 # Part of Odoo Module Developed by Candidroot Solutions Pvt. Ltd.
 # See LICENSE file for full copyright and licensing details.
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError,ValidationError
+from odoo.exceptions import ValidationError, UserError
 from .. import cardconnect
 import logging
 _logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ class SaleOrder(models.Model):
 
         if payment_token_id:
             payment_token = self.env['payment.token'].sudo().browse(payment_token_id)
+            payment_token.partner_id = partner.id
             # Check payment_token/acquirer matching or take the acquirer from token
             if acquirer_id:
                 acquirer = self.env['payment.acquirer'].browse(acquirer_id)
@@ -64,7 +65,7 @@ class SaleOrder(models.Model):
             if acquirer_fees:
                 for order in self:
                     fees_line = order.order_line.filtered(lambda line: line.is_cardconnect_fees_line)
-                    fees_product = self.env.ref('payment_cardconnect_all_cr.product_cardconnect_fees_line')
+                    fees_product = self.env.ref('payment_cardconnect_all_cr.product_cardconnect_fees_line').sudo()
                     if fees_line:
                         fees_line.write({'price_unit': acquirer_fees})
                     else:
@@ -222,10 +223,6 @@ class AccountMove(models.Model):
         else:
             raise UserError(_("Order/Transaction not done"))
 
-
-
-
-
     def _create_payment_transaction(self, vals):
         # Ensure the currencies are the same.
         currency = self[0].currency_id
@@ -244,7 +241,7 @@ class AccountMove(models.Model):
 
         if payment_token_id:
             payment_token = self.env['payment.token'].sudo().browse(payment_token_id)
-
+            payment_token.partner_id = partner.id
             # Check payment_token/acquirer matching or take the acquirer from token
             if acquirer_id:
                 acquirer = self.env['payment.acquirer'].browse(acquirer_id)
@@ -269,7 +266,7 @@ class AccountMove(models.Model):
             if acquirer_fees:
                 for invoice in self:
                     fees_line = invoice.invoice_line_ids.filtered(lambda line: line.is_cardconnect_fees_line)
-                    fees_product = self.env.ref('payment_cardconnect_all_cr.product_cardconnect_fees_line')
+                    fees_product = self.env.ref('payment_cardconnect_all_cr.product_cardconnect_fees_line').sudo()
                     if fees_line:
                         fees_line.write({'price_unit': acquirer_fees})
                     else:

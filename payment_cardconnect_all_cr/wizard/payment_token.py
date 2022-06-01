@@ -10,8 +10,8 @@ class SalePaymentToken(models.TransientModel):
 
     partner_id = fields.Many2one('res.partner',string='Partner')
     name = fields.Char(string='Name')
-    account = fields.Char(sting="Account")
-    expiry = fields.Char(sting="Expiry")
+    account = fields.Char(string="Account")
+    expiry = fields.Char(string="Expiry")
 
     def create_new_payment_token(self):
         acquirer_id = self.env['payment.acquirer'].sudo().search([('provider', '=', 'cardconnect')], limit=1)
